@@ -49,6 +49,11 @@ int synced = 0;
 int interval = 0;
 PShape skate;
 float hauteur=0;
+float gravite = 9.8;
+float vy = 0;
+float bounce = -1;
+
+
 
 float[] q = new float[4];
 Quaternion quat = new Quaternion(1, 0, 0, 0);
@@ -97,12 +102,20 @@ void draw() {
     // black background
     background(0);
     
+     vy +=gravite;
+     hauteur += vy;
+  if(hauteur > height-250)
+  {
+    vy = bounce*vy;
+  }
+    print(vy);
+    print(hauteur);
     // translate everything to the middle of the viewport
-    translate(width / 2, (height-hauteur) / 2);
+    translate(width / 2, ((height-hauteur)+250) / 2);
     float[] axis = quat.toAxisAngle();
     rotate(axis[0], -axis[1], axis[3], axis[2]);
      smooth();
-     scale(50);
+     scale(30);
      shape(skate);
 
 
