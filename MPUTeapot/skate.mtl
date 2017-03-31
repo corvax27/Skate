@@ -1,0 +1,47 @@
+# Blender MTL File: '111127.obj.blend'
+# Material Count: 5
+
+newmtl None
+Ns 0
+Ka 0.000000 0.000000 0.000000
+Kd 0.8 0.8 0.8
+Ks 0.8 0.8 0.8
+d 1
+illum 2
+map_Kd grip.jpg
+
+newmtl None_1080-G10_D.jpg
+Ns 0
+Ka 0.000000 0.000000 0.000000
+Kd 0.8 0.8 0.8
+Ks 0.8 0.8 0.8
+d 1
+illum 2
+map_Kd 1080-G10_D.jpg
+
+newmtl None_Wood-Free-Textures-14798.jpg
+Ns 0
+Ka 0.000000 0.000000 0.000000
+Kd 0.8 0.8 0.8
+Ks 0.8 0.8 0.8
+d 1
+illum 2
+map_Kd Wood-Free-Textures-14798.jpg
+
+newmtl None_eJwFwcENgCAMAMBdGIBSKAHchiBBE7QE6su4u3evemZXmzpExtoA9nMVnrtewjO
+Ns 0
+Ka 0.000000 0.000000 0.000000
+Kd 0.8 0.8 0.8
+Ks 0.8 0.8 0.8
+d 1
+illum 2
+map_Kd eJwFwcENgCAMAMBdGIBSKAHchiBBE7QE6su4u3evemZXmzpExtoA9nMVnrtewjO3qhtz6zWPc-nCF2SRXI6r3rIAvUd0FLx1lGI0zoJNhM7FkJBCsBSNgc4PeT3upr4fvL0hgw.png
+
+newmtl None_wildtextures-metal-sheet-scratched-brushed.jpg
+Ns 0
+Ka 0.000000 0.000000 0.000000
+Kd 0.8 0.8 0.8
+Ks 0.8 0.8 0.8
+d 1
+illum 2
+map_Kd wildtextures-metal-sheet-scratched-brushed.jpg
