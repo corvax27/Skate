@@ -62,6 +62,15 @@ float[] gravity = new float[3];
 float[] euler = new float[3];
 float[] ypr = new float[3];
 
+//Saving
+String data[];
+String[] qString;
+boolean save= true;
+
+// Menu
+boolean game= true;
+PImage bg;
+
 void setup() {
     // 800px square viewport using OpenGL rendering
     size(800, 800, OPENGL);
@@ -87,11 +96,15 @@ void setup() {
     // (expected by MPU6050_DMP6 example Arduino sketch)
     port.write('r');
     skate = loadShape("skate.obj");
+    bg = loadImage("background.jpg");
+    
    
 }
 
 void draw() {
-    if (millis() - interval > 1000) {
+   
+  if(game){
+  if (millis() - interval > 1000) {
         // resend single character to trigger DMP init/start
         // in case the MPU is halted/reset while applet is running
         port.write('r');
@@ -102,14 +115,7 @@ void draw() {
     // black background
     background(0);
     
-     vy +=gravite;
-     hauteur += vy;
-  if(hauteur > height-250)
-  {
-    vy = bounce*vy;
-  }
-    print(vy);
-    print(hauteur);
+   
     // translate everything to the middle of the viewport
     translate(width / 2, ((height-hauteur)+250) / 2);
     float[] axis = quat.toAxisAngle();
@@ -118,12 +124,22 @@ void draw() {
      scale(30);
      shape(skate);
 
-
+    }
+    else
+    {
+   
+    background(bg);
+    textFont(createFont("Courier",40));
+    text("Start",(width/2),300);
+    text("Load Trick",(width/2),400);
+    text("Quit",(width/2),500);
+    }
    
 }
 
 void serialEvent(Serial port) {
-    interval = millis();
+ 
+  interval = millis();
     while (port.available() > 0) {
         int ch = port.read();
 
@@ -150,11 +166,20 @@ void serialEvent(Serial port) {
                 q[2] = ((teapotPacket[6] << 8) | teapotPacket[7]) / 16384.0f;
                 q[3] = ((teapotPacket[8] << 8) | teapotPacket[9]) / 16384.0f;
                 for (int i = 0; i < 4; i++) if (q[i] >= 2) q[i] = -4 + q[i];
+           
+               
                 
                 // set our toxilibs quaternion to new data
                 quat.set(q[0], q[1], q[2], q[3]);
                 hauteur= q[2];
-
+ 
+                qString[0]=str(q[0]);
+                qString[1]=str(q[1]);
+                qString[2]=str(q[2]);
+                qString[3]=str(q[3]);
+                                
+                
+                saveStrings("save.txt",qString);
                
             }
         }
