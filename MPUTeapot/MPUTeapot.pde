@@ -1,4 +1,4 @@
-// I2C device class (I2Cdev) demonstration Processing sketch for MPU6050 DMP output //<>// //<>//
+// I2C device class (I2Cdev) demonstration Processing sketch for MPU6050 DMP output //<>// //<>// //<>//
 // 6/20/2012 by Jeff Rowberg <jeff@rowberg.net>
 // Updates should (hopefully) always be available at https://github.com/jrowberg/i2cdevlib
 //
@@ -63,17 +63,17 @@ float[] euler = new float[3];
 float[] ypr = new float[3];
 
 //Saving
-String data[];
 String[] qString= new String[4];
 StringList recordData;
 boolean save= true;
 PrintWriter output;
 int BufferSize= 600;
-String buf;
 boolean rIsActive= false;
+boolean wIsActive= false;
+boolean pIsActive= false;
 int counter=0;
 int timer=0;
-boolean IsActive= false;
+
 // Menu
 boolean game= true;
 PImage bg;
@@ -181,26 +181,49 @@ void serialEvent(Serial port) {
         qString[1]=str(q[1]);
         qString[2]=str(q[2]);
         qString[3]=str(q[3]);
+        
+        SavingFile();
 
 
 
-       SavingFile(qString);
+        
       }
     }
   }
 }
 
-void SavingFile(String[] quat) {
+void keyReleased(){
 
-  if (keyPressed || IsActive==true) {
-
-    if (key == 'w') { //<>//
-
-      println("Writing to File");
+if (key == 'w') {
+    wIsActive =true;
     }
 
-    if (key == 'r' || rIsActive == true) {
-      if (!rIsActive) {
+    if (key == 'r' ) {
+     rIsActive= true;
+      }
+
+     
+    if (key == 'p') {
+    pIsActive=true;
+     
+    }
+}
+
+void SavingFile(){
+  if (wIsActive) {
+
+      println("Writing to File");
+      for (int n = 0; n < recordData.size(); n++) {
+
+        output.println(recordData.get(n));
+      }
+      wIsActive = false;
+       output.flush();
+       output.close();
+    }
+
+    if (rIsActive) {
+      if (timer == 0) {
 
         counter=0;
         println("Recording in 3 sec");
@@ -210,25 +233,26 @@ void SavingFile(String[] quat) {
         println("2");
         delay(1000);
         println("1");
-        delay(1000);
-        rIsActive= true;
-        IsActive= true;
+        delay(1000);               
         timer=millis();
         print("Recording for 10 sec ");
       }
+     
+      
 
       if (counter < BufferSize && (millis()-timer >= (1000/60)) ) {
         timer = millis();
         print("Recording ");
-        println(quat[0]+":"+quat[1]+":"+quat[2]+":"+quat[3]);
-        recordData.append(quat[0]+":"+quat[1]+":"+quat[2]+":"+quat[3]);
+        println(qString[0]+":"+qString[1]+":"+qString[2]+":"+qString[3]);
+        recordData.append(qString[0]+":"+qString[1]+":"+qString[2]+":"+qString[3]);
         counter++;
       }
       if (counter == (BufferSize -1) )
       {
         println("End of Recording");
-        IsActive =false;
-       
+        rIsActive= false;
+        timer =0;
+      
       }
     }
 
@@ -236,5 +260,10 @@ void SavingFile(String[] quat) {
 
       println("Writing to File");
     }
-  }
+  
+  
+  
+  
+  
+  
 }
