@@ -64,6 +64,7 @@ float[] ypr = new float[3];
 
 //Saving
 String[] qString= new String[4];
+String[] LoadData;
 StringList recordData;
 boolean save= true;
 PrintWriter output;
@@ -172,7 +173,7 @@ void serialEvent(Serial port) {
         q[3] = ((teapotPacket[8] << 8) | teapotPacket[9]) / 16384.0f;
         for (int i = 0; i < 4; i++) if (q[i] >= 2) q[i] = -4 + q[i];
 
-
+        if(!pIsActive){
         // set our toxilibs quaternion to new data
         quat.set(q[0], q[1], q[2], q[3]);
         hauteur= q[2];
@@ -181,7 +182,7 @@ void serialEvent(Serial port) {
         qString[1]=str(q[1]);
         qString[2]=str(q[2]);
         qString[3]=str(q[3]);
-        
+        }
         SavingFile();
 
 
@@ -199,7 +200,9 @@ if (key == 'w') {
     }
 
     if (key == 'r' ) {
-     rIsActive= true;
+     
+      
+      rIsActive= true;
       }
 
      
@@ -225,7 +228,7 @@ void SavingFile(){
     if (rIsActive) {
       if (timer == 0) {
 
-        counter=0;
+        
         println("Recording in 3 sec");
         delay(1000);
         println("3");
@@ -252,13 +255,51 @@ void SavingFile(){
         println("End of Recording");
         rIsActive= false;
         timer =0;
-      
+        counter=0;
       }
     }
 
-    if (key == 'p') {
-
-      println("Writing to File");
+    if (pIsActive) {
+      
+      if(timer==0)
+      {
+      println("Playing Replay");
+      //Load the text file
+      LoadData = loadStrings("save.txt");
+      timer=millis();
+      }
+      
+     /* for(int i = 0;i < LoadData.length; i++)
+      {
+       println("["+ str(i)+ "] "+ LoadData[i]);
+      }*/
+      
+        if (counter < BufferSize && (millis()-timer >= (1000/60)) ) {
+        timer = millis();
+         q =float(split(LoadData[counter],':'));
+         quat.set(q[0], q[1], q[2], q[3]);
+        counter++;
+      }
+      /*
+      for(int i = millis(); (millis()- i >= (1000/60)) && counter < BufferSize ; i = millis())
+      {
+       q =float(split(LoadData[counter],':'));
+       quat.set(q[0], q[1], q[2], q[3]);
+       counter++;
+      }
+      counter++;
+      */
+      if (counter >= (BufferSize -1) )
+      {
+        println("End of replay");
+        pIsActive= false;
+        counter=0;
+      
+      }
+      
+      
+      
+     
     }
   
   
