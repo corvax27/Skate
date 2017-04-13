@@ -48,6 +48,7 @@ int serialCount = 0;                 // current packet byte position
 int synced = 0;
 int interval = 0;
 PShape skate;
+PShape skateStable;
 float hauteur=0;
 float gravite = 9.8;
 float vy = 0;
@@ -81,8 +82,9 @@ PImage bg;
 
 void setup() {
   // 800px square viewport using OpenGL rendering
-  size(800, 800, OPENGL);
+  size(1280, 720, OPENGL);
   gfx = new ToxiclibsSupport(this);
+  
 
   // setup lights and antialiasing
   lights();
@@ -104,9 +106,11 @@ void setup() {
   // (expected by MPU6050_DMP6 example Arduino sketch)
   port.write('r');
   skate = loadShape("skate.obj");
-  bg = loadImage("background.jpg");
+  bg = loadImage("Overlay(s).png");
   output= createWriter("save.txt");
   recordData = new StringList();
+  skate = loadShape("skate.obj");
+  skateStable = loadShape("skate.obj");
 }
 
 void draw() {
@@ -120,16 +124,27 @@ void draw() {
     }
 
     // black background
-    background(0);
-
-
+    background(bg);
+    //scale(25);
+   
+   
     // translate everything to the middle of the viewport
-    translate(width / 2, ((height-hauteur)+250) / 2);
+    
     float[] axis = quat.toAxisAngle();
+   
+
+    
+    pushMatrix();
+    translate(9*width / 32, ((5*height/8)));
+    
     rotate(axis[0], -axis[1], axis[3], axis[2]);
-    smooth();
-    scale(30);
+    scale(25);
     shape(skate);
+    popMatrix();
+  
+    smooth();
+   
+   
   } else
   {
 
