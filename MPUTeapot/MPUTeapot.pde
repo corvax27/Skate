@@ -84,7 +84,7 @@ void setup() {
   // 800px square viewport using OpenGL rendering
   size(1280, 720, OPENGL);
   gfx = new ToxiclibsSupport(this);
-  
+
 
   // setup lights and antialiasing
   lights();
@@ -123,28 +123,26 @@ void draw() {
       interval = millis();
     }
 
-    // black background
+    //Interface
     background(bg);
-    //scale(25);
-   
-   
-    // translate everything to the middle of the viewport
-    
-    float[] axis = quat.toAxisAngle();
-   
 
-    
+
+
+
+    //Creer une variable d'axe qui inclue tous les axes d'un quaternion.
+    float[] axis = quat.toAxisAngle();
+
+
+    //Matrice du skate en temps réel
     pushMatrix();
     translate(9*width / 32, ((5*height/8)));
-    
+
     rotate(axis[0], -axis[1], axis[3], axis[2]);
     scale(25);
     shape(skate);
     popMatrix();
-  
+
     smooth();
-   
-   
   } else
   {
 
@@ -166,7 +164,8 @@ void serialEvent(Serial port) {
 
     if (synced == 0 && ch != '$') return;   // initial synchronization - also used to resync/realign if needed
     synced = 1;
-    //print ((char)ch);
+
+    println(ch);
 
     if ((serialCount == 1 && ch != 2)
       || (serialCount == 12 && ch != '\r')
@@ -188,138 +187,110 @@ void serialEvent(Serial port) {
         q[3] = ((teapotPacket[8] << 8) | teapotPacket[9]) / 16384.0f;
         for (int i = 0; i < 4; i++) if (q[i] >= 2) q[i] = -4 + q[i];
 
-        if(!pIsActive){
-        // set our toxilibs quaternion to new data
-        quat.set(q[0], q[1], q[2], q[3]);
-        hauteur= q[2];
+        if (!pIsActive) {
+          // set our toxilibs quaternion to new data
+          quat.set(q[0], q[1], q[2], q[3]);
+          hauteur= q[2];
 
-        qString[0]=str(q[0]);     
-        qString[1]=str(q[1]);
-        qString[2]=str(q[2]);
-        qString[3]=str(q[3]);
+          qString[0]=str(q[0]);     
+          qString[1]=str(q[1]);
+          qString[2]=str(q[2]);
+          qString[3]=str(q[3]);
         }
         SavingFile();
-
-
-
-        
       }
     }
   }
 }
 
-void keyReleased(){
+void keyReleased() {
 
-if (key == 'w') {
+  if (key == 'w') {
     wIsActive =true;
-    }
+  }
 
-    if (key == 'r' ) {
-     
-      
-      rIsActive= true;
-      }
+  if (key == 'r' ) {
 
-     
-    if (key == 'p') {
+
+    rIsActive= true;
+  }
+
+
+  if (key == 'p') {
     pIsActive=true;
-     
-    }
+  }
 }
 
-void SavingFile(){
+void SavingFile() {
   if (wIsActive) {
 
-      println("Writing to File");
-      for (int n = 0; n < recordData.size(); n++) {
+    println("Writing to File");
+    for (int n = 0; n < recordData.size(); n++) {
 
-        output.println(recordData.get(n));
-      }
-      wIsActive = false;
-       output.flush();
-       output.close();
+      output.println(recordData.get(n));
+    }
+    wIsActive = false;
+    output.flush();
+    output.close();
+  }
+
+  if (rIsActive) {
+    if (timer == 0) {
+
+
+      println("Recording in 3 sec");
+      delay(1000);
+      println("3");
+      delay(1000);
+      println("2");
+      delay(1000);
+      println("1");
+      delay(1000);               
+      timer=millis();
+      print("Recording for 10 sec ");
     }
 
-    if (rIsActive) {
-      if (timer == 0) {
 
-        
-        println("Recording in 3 sec");
-        delay(1000);
-        println("3");
-        delay(1000);
-        println("2");
-        delay(1000);
-        println("1");
-        delay(1000);               
-        timer=millis();
-        print("Recording for 10 sec ");
-      }
-     
-      
 
-      if (counter < BufferSize && (millis()-timer >= (1000/60)) ) {
-        timer = millis();
-        print("Recording ");
-        println(qString[0]+":"+qString[1]+":"+qString[2]+":"+qString[3]);
-        recordData.append(qString[0]+":"+qString[1]+":"+qString[2]+":"+qString[3]);
-        counter++;
-      }
-      if (counter == (BufferSize -1) )
-      {
-        println("End of Recording");
-        rIsActive= false;
-        timer =0;
-        counter=0;
-      }
+    if (counter < BufferSize && (millis()-timer >= (1000/60)) ) {
+      timer = millis();
+      print("Recording ");
+      println(qString[0]+":"+qString[1]+":"+qString[2]+":"+qString[3]);
+      recordData.append(qString[0]+":"+qString[1]+":"+qString[2]+":"+qString[3]);
+      counter++;
     }
+    if (counter == (BufferSize -1) )
+    {
+      println("End of Recording");
+      rIsActive= false;
+      timer =0;
+      counter=0;
+    }
+  }
 
-    if (pIsActive) {
-      
-      if(timer==0)
-      {
+  if (pIsActive) {
+
+    if (timer==0)
+    {
       println("Playing Replay");
       //Load the text file
       LoadData = loadStrings("save.txt");
       timer=millis();
-      }
-      
-     /* for(int i = 0;i < LoadData.length; i++)
-      {
-       println("["+ str(i)+ "] "+ LoadData[i]);
-      }*/
-      
-        if (counter < BufferSize && (millis()-timer >= (1000/60)) ) {
-        timer = millis();
-         q =float(split(LoadData[counter],':'));
-         quat.set(q[0], q[1], q[2], q[3]);
-        counter++;
-      }
-      /*
-      for(int i = millis(); (millis()- i >= (1000/60)) && counter < BufferSize ; i = millis())
-      {
-       q =float(split(LoadData[counter],':'));
-       quat.set(q[0], q[1], q[2], q[3]);
-       counter++;
-      }
-      counter++;
-      */
-      if (counter >= (BufferSize -1) )
-      {
-        println("End of replay");
-        pIsActive= false;
-        counter=0;
-      
-      }
-      
-      
-      
-     
     }
-  
-  
-  
-  
-  
-  
+
+
+    if (counter < BufferSize && (millis()-timer >= (1000/60)) ) {
+      timer = millis();
+      q =float(split(LoadData[counter], ':'));
+      quat.set(q[0], q[1], q[2], q[3]);
+      counter++;
+    }
+
+    if (counter >= (BufferSize -1) )
+    {
+      println("End of replay");
+      pIsActive= false;
+      counter=0;
+    }
+  }
 }

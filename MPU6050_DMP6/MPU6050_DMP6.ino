@@ -357,6 +357,10 @@ void loop() {
     
         #ifdef OUTPUT_TEAPOT
             // Permet d'envoyer l'accélération linéaire en z et les quaternions
+            // display real acceleration, adjusted to remove gravity
+            mpu.dmpGetQuaternion(&q, fifoBuffer);
+            mpu.dmpGetAccel(&aa, fifoBuffer);
+            mpu.dmpGetGravity(&gravity, &q);
             mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
             // display quaternion values in InvenSense Teapot demo format:
             teapotPacket[2] = fifoBuffer[0];
@@ -367,8 +371,11 @@ void loop() {
             teapotPacket[7] = fifoBuffer[9];
             teapotPacket[8] = fifoBuffer[12];
             teapotPacket[9] = fifoBuffer[13];
+           // teapotPacket[10]=aaReal.z ;
+           // Serial.println(aaReal.z);
+            //Serial.println(teapotPacket[10]);
             Serial.write(teapotPacket, 14);
-            Serial.write(aaReal.z);
+           // Serial.write(aaReal.z);
             teapotPacket[11]++; // packetCount, loops at 0xFF on purpose
         #endif
 
