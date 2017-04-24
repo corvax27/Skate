@@ -43,7 +43,7 @@ import toxi.processing.*;
 ToxiclibsSupport gfx;
 
 Serial port;                         // The serial port
-char[] teapotPacket = new char[14];  // InvenSense Teapot packet
+char[] teapotPacket = new char[16];  // InvenSense Teapot packet
 int serialCount = 0;                 // current packet byte position
 int synced = 0;
 int interval = 0;
@@ -56,7 +56,8 @@ float bounce = -1;
 
 
 
-float[] q = new float[4];
+float[] q = new float[4]; // Storage des valeurs de quaternion
+int accReely; //Acceleration du skate en y 
 Quaternion quat = new Quaternion(1, 0, 0, 0);
 
 float[] gravity = new float[3];
@@ -97,7 +98,7 @@ void setup() {
   //String portName = Serial.list()[0];
 
   // get a specific serial port (use EITHER this OR the first-available code above)
-  String portName = "COM4";
+  String portName = "COM3";
 
   // open the serial port
   port = new Serial(this, portName, 115200);
@@ -177,7 +178,7 @@ void serialEvent(Serial port) {
 
     if (serialCount > 0 || ch == '$') {
       teapotPacket[serialCount++] = (char)ch;
-      if (serialCount == 14) {
+      if (serialCount == 16) {
         serialCount = 0; // restart packet byte position
 
         // get quaternion from data packet
@@ -186,6 +187,12 @@ void serialEvent(Serial port) {
         q[2] = ((teapotPacket[6] << 8) | teapotPacket[7]) / 16384.0f;
         q[3] = ((teapotPacket[8] << 8) | teapotPacket[9]) / 16384.0f;
         for (int i = 0; i < 4; i++) if (q[i] >= 2) q[i] = -4 + q[i];
+
+        println(int(teapotPacket[14]), "lol");
+        println(int(teapotPacket[15]),"lol2");
+
+       // accReely= teapotPacket[14] << 8 | teapotPacket[15];
+        //println(accReely);
 
         if (!pIsActive) {
           // set our toxilibs quaternion to new data

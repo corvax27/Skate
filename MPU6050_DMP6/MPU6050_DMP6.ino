@@ -138,6 +138,7 @@ VectorInt16 aaWorld;    // [x, y, z]            world-frame accel sensor measure
 VectorFloat gravity;    // [x, y, z]            gravity vector
 float euler[3];         // [psi, theta, phi]    Euler angle container
 float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
+byte dataAcc[2] ; // Séparer l'accélération (int) en 2 bytes
 
 // packet structure for InvenSense teapot demo
 uint8_t teapotPacket[14] = { '$', 0x02, 0,0, 0,0, 0,0, 0,0, 0x00, 0x00, '\r', '\n' };
@@ -356,12 +357,18 @@ void loop() {
         #endif
     
         #ifdef OUTPUT_TEAPOT
+
+         
             // Permet d'envoyer l'accélération linéaire en z et les quaternions
             // display real acceleration, adjusted to remove gravity
             mpu.dmpGetQuaternion(&q, fifoBuffer);
             mpu.dmpGetAccel(&aa, fifoBuffer);
             mpu.dmpGetGravity(&gravity, &q);
             mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
+
+            //Permet de separer l'acceleration (int) en 2 bytes
+            dataAcc[0] = (byte) (aaReal.z & 0xFF);
+            dataAcc[1] = (byte) ((aaReal.z >> 8) & 0xFF);
             // display quaternion values in InvenSense Teapot demo format:
             teapotPacket[2] = fifoBuffer[0];
             teapotPacket[3] = fifoBuffer[1];
@@ -374,8 +381,11 @@ void loop() {
            // teapotPacket[10]=aaReal.z ;
            // Serial.println(aaReal.z);
             //Serial.println(teapotPacket[10]);
+            //Serial.println(dataAcc[0]);
+           // Serial.println(dataAcc[1]);
             Serial.write(teapotPacket, 14);
-           // Serial.write(aaReal.z);
+            Serial.write(dataAcc,2);
+           
             teapotPacket[11]++; // packetCount, loops at 0xFF on purpose
         #endif
 
