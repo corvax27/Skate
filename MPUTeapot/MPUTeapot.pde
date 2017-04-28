@@ -57,7 +57,7 @@ float bounce = -1;
 
 
 float[] q = new float[4]; // Storage des valeurs de quaternion
-int accReely; //Acceleration du skate en y 
+float accReely; //Acceleration du skate en y 
 Quaternion quat = new Quaternion(1, 0, 0, 0);
 
 float[] gravity = new float[3];
@@ -98,7 +98,7 @@ void setup() {
   //String portName = Serial.list()[0];
 
   // get a specific serial port (use EITHER this OR the first-available code above)
-  String portName = "COM3";
+  String portName = "COM4";
 
   // open the serial port
   port = new Serial(this, portName, 115200);
@@ -166,11 +166,11 @@ void serialEvent(Serial port) {
     if (synced == 0 && ch != '$') return;   // initial synchronization - also used to resync/realign if needed
     synced = 1;
 
-    println(ch);
+    //println(ch);
 
     if ((serialCount == 1 && ch != 2)
-      || (serialCount == 12 && ch != '\r')
-      || (serialCount == 13 && ch != '\n')) {
+      || (serialCount == 14 && ch != '\r')
+      || (serialCount == 15 && ch != '\n')) {
       serialCount = 0;
       synced = 0;
       return;
@@ -186,13 +186,16 @@ void serialEvent(Serial port) {
         q[1] = ((teapotPacket[4] << 8) | teapotPacket[5]) / 16384.0f;
         q[2] = ((teapotPacket[6] << 8) | teapotPacket[7]) / 16384.0f;
         q[3] = ((teapotPacket[8] << 8) | teapotPacket[9]) / 16384.0f;
+        accReely= ((teapotPacket[10] << 8) | teapotPacket[11]) /16384.0f;
+        if(accReely >= 2) accReely= -4 + accReely;
         for (int i = 0; i < 4; i++) if (q[i] >= 2) q[i] = -4 + q[i];
+        accReely =accReely * 16384; 
+        //println(q[0],"ValeurQuat");
+        //println(int(teapotPacket[10]), "Byte1");
+        //println(int(teapotPacket[11]),"Byte2");
 
-        println(int(teapotPacket[14]), "lol");
-        println(int(teapotPacket[15]),"lol2");
-
-       // accReely= teapotPacket[14] << 8 | teapotPacket[15];
-        //println(accReely);
+        
+        println(accReely , "Acceleration");
 
         if (!pIsActive) {
           // set our toxilibs quaternion to new data

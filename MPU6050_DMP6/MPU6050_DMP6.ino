@@ -141,7 +141,7 @@ float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gra
 byte dataAcc[2] ; // Séparer l'accélération (int) en 2 bytes
 
 // packet structure for InvenSense teapot demo
-uint8_t teapotPacket[14] = { '$', 0x02, 0,0, 0,0, 0,0, 0,0, 0x00, 0x00, '\r', '\n' };
+uint8_t teapotPacket[16] = { '$', 0x02, 0,0, 0,0, 0,0, 0,0,0,0, 0x00, 0x00, '\r', '\n'};
 
 
 
@@ -367,8 +367,12 @@ void loop() {
             mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
 
             //Permet de separer l'acceleration (int) en 2 bytes
-            dataAcc[0] = (byte) (aaReal.z & 0xFF);
-            dataAcc[1] = (byte) ((aaReal.z >> 8) & 0xFF);
+            //dataAcc[0] = (byte)(aaReal.z & 0xFF);
+            //dataAcc[1] = (byte)(aaReal.z >> 8);
+            int intTemp =(int)aaReal.z;
+            Serial.println(intTemp);
+          
+           
             // display quaternion values in InvenSense Teapot demo format:
             teapotPacket[2] = fifoBuffer[0];
             teapotPacket[3] = fifoBuffer[1];
@@ -378,15 +382,15 @@ void loop() {
             teapotPacket[7] = fifoBuffer[9];
             teapotPacket[8] = fifoBuffer[12];
             teapotPacket[9] = fifoBuffer[13];
-           // teapotPacket[10]=aaReal.z ;
-           // Serial.println(aaReal.z);
-            //Serial.println(teapotPacket[10]);
-            //Serial.println(dataAcc[0]);
-           // Serial.println(dataAcc[1]);
-            Serial.write(teapotPacket, 14);
-            Serial.write(dataAcc,2);
+            
+            teapotPacket[10] = highByte(intTemp);
+            teapotPacket[11] = lowByte(intTemp);
            
-            teapotPacket[11]++; // packetCount, loops at 0xFF on purpose
+          
+             Serial.write(teapotPacket, 16);
+            //Serial.write(dataAcc,2);
+           
+            teapotPacket[13]++; // packetCount, loops at 0xFF on purpose
         #endif
 
         // blink LED to indicate activity
