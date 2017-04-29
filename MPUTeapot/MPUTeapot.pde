@@ -49,10 +49,7 @@ int synced = 0;
 int interval = 0;
 PShape skate;
 PShape skateStable;
-float hauteur=0;
-float gravite = 9.8;
-float vy = 0;
-float bounce = -1;
+
 
 
 
@@ -63,6 +60,18 @@ Quaternion quat = new Quaternion(1, 0, 0, 0);
 float[] gravity = new float[3];
 float[] euler = new float[3];
 float[] ypr = new float[3];
+
+//Saut de la planche
+float VY_INIT =5.7; //Definie la valeur de la vélocité en y
+float vy;
+float gravite = 0.1;
+float bounce = -1;
+float yPos; // Position en y de la planche
+boolean isJumping;
+boolean isReversing;
+int accIgnore = 0; // Ignore les 500 premieres valeurs de l'accéleration
+int JUMP_SENSIBILITY = -5000 ; //Détermine la sensibility nécessaire pour faire un saut
+
 
 //Saving
 String[] qString= new String[4];
@@ -98,7 +107,7 @@ void setup() {
   //String portName = Serial.list()[0];
 
   // get a specific serial port (use EITHER this OR the first-available code above)
-  String portName = "COM4";
+  String portName = "COM3";
 
   // open the serial port
   port = new Serial(this, portName, 115200);
@@ -112,6 +121,12 @@ void setup() {
   recordData = new StringList();
   skate = loadShape("skate.obj");
   skateStable = loadShape("skate.obj");
+
+
+
+  isJumping=false;
+  isReversing= false;
+  vy=VY_INIT;
 }
 
 void draw() {
@@ -127,16 +142,31 @@ void draw() {
     //Interface
     background(bg);
 
-
-
-
     //Creer une variable d'axe qui inclue tous les axes d'un quaternion.
-    float[] axis = quat.toAxisAngle();
+    float[] axis = quat.toAxisAngle();  
+
+    if (isJumping)
+    {
+      //Vy représente la vélocité et l'autre la gravité (constante)
+      //Lorsque le saut commence la vélocité initiale est définit par la variable VY_INIT.
+      // Ensuite la vy est ajoutée à yPos qui est une variable qui change la position de skate dans le translate.
+      // Cette vélocité est diminuée jusqu'à ce que la valeur de yPos revienne à zero.
+      //Le saut est terminé et la variable vy est remit à l'initial prêt pour une autre utilisation.
+
+      vy -= gravite;
+      yPos += vy;
+      if (yPos < 0)
+      {
+        isJumping =false;
+        vy= VY_INIT;
+      }
+    }
 
 
-    //Matrice du skate en temps réel
+//Matrice du skate en temps réel
+
     pushMatrix();
-    translate(9*width / 32, ((5*height/8)));
+    translate(9*width / 32, ((5*height/8))-yPos);
 
     rotate(axis[0], -axis[1], axis[3], axis[2]);
     scale(25);
@@ -187,20 +217,19 @@ void serialEvent(Serial port) {
         q[2] = ((teapotPacket[6] << 8) | teapotPacket[7]) / 16384.0f;
         q[3] = ((teapotPacket[8] << 8) | teapotPacket[9]) / 16384.0f;
         accReely= ((teapotPacket[10] << 8) | teapotPacket[11]) /16384.0f;
-        if(accReely >= 2) accReely= -4 + accReely;
+        if (accReely >= 2) accReely= -4 + accReely;
         for (int i = 0; i < 4; i++) if (q[i] >= 2) q[i] = -4 + q[i];
         accReely =accReely * 16384; 
-        //println(q[0],"ValeurQuat");
-        //println(int(teapotPacket[10]), "Byte1");
-        //println(int(teapotPacket[11]),"Byte2");
 
-        
-        println(accReely , "Acceleration");
+        if ((accIgnore++) >500  && accReely <= JUMP_SENSIBILITY  )isJumping = true;
+
+
+        //println(accReely, "Acceleration", accIgnore);
 
         if (!pIsActive) {
           // set our toxilibs quaternion to new data
           quat.set(q[0], q[1], q[2], q[3]);
-          hauteur= q[2];
+
 
           qString[0]=str(q[0]);     
           qString[1]=str(q[1]);
