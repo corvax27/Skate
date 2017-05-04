@@ -141,7 +141,9 @@ float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gra
 byte dataAcc[2] ; // Séparer l'accélération (int) en 2 bytes
 
 // packet structure for InvenSense teapot demo
-uint8_t teapotPacket[16] = { '$', 0x02, 0,0, 0,0, 0,0, 0,0,0,0, 0x00, 0x00, '\r', '\n'};
+uint8_t teapotPacket[21] = { '$', 0x02, 0,0, 0,0, 0,0, 0,0,0,0,0,0,0,0,0, 0x00, 0x00, '\r', '\n'};
+//Stockage des valeurs des softpot
+
 
 
 
@@ -168,6 +170,14 @@ void setup() {
     #elif I2CDEV_IMPLEMENTATION == I2CDEV_BUILTIN_FASTWIRE
         Fastwire::setup(400, true);
     #endif
+
+    //Initialise le capteur
+    digitalWrite(A0, HIGH); //enable pullup resistor
+    digitalWrite(A1, HIGH); //enable pullup resistor
+    digitalWrite(A2, HIGH); //enable pullup resistor
+    digitalWrite(A3, HIGH); //enable pullup resistor
+    digitalWrite(A4, HIGH); //enable pullup resistor
+
 
     // initialize serial communication
     // (115200 chosen because it is required for Teapot Demo output, but it's
@@ -366,13 +376,18 @@ void loop() {
             mpu.dmpGetGravity(&gravity, &q);
             mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
 
-            //Permet de separer l'acceleration (int) en 2 bytes
-            //dataAcc[0] = (byte)(aaReal.z & 0xFF);
-            //dataAcc[1] = (byte)(aaReal.z >> 8);
+           //Convetie aaReal en int.
             int intTemp =(int)aaReal.z;
-            Serial.println(intTemp);
+         
+          //Receuille les données de chacun des ports analogue
+            int softpotReading[5] = {0,0,0,0,0};
+            
+          for(int i=0;i<5;i++)
+          {
+            if(analogRead(i) < 1020){softpotReading[i]=analogRead(i);}        
+          }
+                   
           
-           
             // display quaternion values in InvenSense Teapot demo format:
             teapotPacket[2] = fifoBuffer[0];
             teapotPacket[3] = fifoBuffer[1];
@@ -382,15 +397,24 @@ void loop() {
             teapotPacket[7] = fifoBuffer[9];
             teapotPacket[8] = fifoBuffer[12];
             teapotPacket[9] = fifoBuffer[13];
-            
+
+             //Permet de separer l'acceleration (int) en 2 bytes (low,high)
             teapotPacket[10] = highByte(intTemp);
             teapotPacket[11] = lowByte(intTemp);
-           
+
+             //Envoie les valeurs des softpots
+             //Transforme les valeurs en byte 1 to 255
+             
+             teapotPacket[12]= (byte)(softpotReading[0]/4);
+             teapotPacket[13]= (byte)(softpotReading[1]/4);
+             teapotPacket[14]= (byte)(softpotReading[2]/4);
+             teapotPacket[15]= (byte)(softpotReading[3]/4);
+             teapotPacket[16]= (byte)(softpotReading[4]/4);
           
-             Serial.write(teapotPacket, 16);
-            //Serial.write(dataAcc,2);
+             Serial.write(teapotPacket, 21);
            
-            teapotPacket[13]++; // packetCount, loops at 0xFF on purpose
+           
+            teapotPacket[18]++; // packetCount, loops at 0xFF on purpose
         #endif
 
         // blink LED to indicate activity

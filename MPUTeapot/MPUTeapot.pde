@@ -43,7 +43,7 @@ import toxi.processing.*;
 ToxiclibsSupport gfx;
 
 Serial port;                         // The serial port
-char[] teapotPacket = new char[16];  // InvenSense Teapot packet
+char[] teapotPacket = new char[21];  // InvenSense Teapot packet
 int serialCount = 0;                 // current packet byte position
 int synced = 0;
 int interval = 0;
@@ -89,6 +89,10 @@ int timer=0;
 // Menu
 boolean game= true;
 PImage bg;
+
+//Couleur
+color red = color(255,0,43);
+color green = color(0,255,0);
 
 void setup() {
   // 800px square viewport using OpenGL rendering
@@ -161,6 +165,38 @@ void draw() {
         vy= VY_INIT;
       }
     }
+    //Matrice des capteurs de pressions
+    pushMatrix();
+   
+    translate(45*width /64, (7*height/32));
+    noStroke();
+         
+    for(int i=1;i<51;i++)
+    {
+      
+    if( (teapotPacket[12]/5) == i && teapotPacket[12] != 0 )fill(green); 
+    else fill(red); 
+   
+    rect(i*5, 20, 5, 12);
+    
+    if( (teapotPacket[13]/5) == i && teapotPacket[13] != 0 )fill(green); 
+    else fill(red); 
+    rect( (i*5)+15, 40, 5, 12);
+    
+    if( (teapotPacket[14]/5) == i && teapotPacket[14] != 0 )fill(green); 
+    else fill(red); 
+    rect( (i*5)+20, 60, 5, 12);
+    
+    if( (teapotPacket[15]/5) == i && teapotPacket[15] != 0 )fill(green); 
+    else fill(red); 
+    rect((i*5)+15, 80, 5, 12);
+    
+    if( (teapotPacket[16]/5) == i && teapotPacket[16] != 0 )fill(green); 
+    else fill(red); 
+    rect(i*5, 100, 5, 12);
+    }
+    
+    popMatrix();
 
 
 //Matrice du skate en temps réel
@@ -168,9 +204,12 @@ void draw() {
     pushMatrix();
     translate(9*width / 32, ((5*height/8))-yPos);
 
+
     rotate(axis[0], -axis[1], axis[3], axis[2]);
+    
     scale(25);
     shape(skate);
+    
     popMatrix();
 
     smooth();
@@ -199,8 +238,8 @@ void serialEvent(Serial port) {
     //println(ch);
 
     if ((serialCount == 1 && ch != 2)
-      || (serialCount == 14 && ch != '\r')
-      || (serialCount == 15 && ch != '\n')) {
+      || (serialCount == 19 && ch != '\r')
+      || (serialCount == 20 && ch != '\n')) {
       serialCount = 0;
       synced = 0;
       return;
@@ -208,7 +247,8 @@ void serialEvent(Serial port) {
 
     if (serialCount > 0 || ch == '$') {
       teapotPacket[serialCount++] = (char)ch;
-      if (serialCount == 16) {
+      println(ch);
+      if (serialCount == 21) {
         serialCount = 0; // restart packet byte position
 
         // get quaternion from data packet
@@ -217,15 +257,21 @@ void serialEvent(Serial port) {
         q[2] = ((teapotPacket[6] << 8) | teapotPacket[7]) / 16384.0f;
         q[3] = ((teapotPacket[8] << 8) | teapotPacket[9]) / 16384.0f;
         accReely= ((teapotPacket[10] << 8) | teapotPacket[11]) /16384.0f;
+        
+        //Permet de savoir si la valeur envoyer est negatif ou positif
+        // La valeur reçu est de 0 à 65,534
+        //Pour le transformer en int16 ,il faut retrouver le negative
+        //D'ou pourquoi on divise en 16354
+        //Tous les valeurs en haut de deux sont des nombres negatifs
         if (accReely >= 2) accReely= -4 + accReely;
         for (int i = 0; i < 4; i++) if (q[i] >= 2) q[i] = -4 + q[i];
         accReely =accReely * 16384; 
 
-        if ((accIgnore++) >500  && accReely <= JUMP_SENSIBILITY  )isJumping = true;
+        //Permet de capter les sauts grace à l'accéleration reçu.
+        // De plus il ignore les 300 premières lecture qui sont fausse.
+        if ((accIgnore++) >300  && accReely <= JUMP_SENSIBILITY  )isJumping = true;
 
-
-        //println(accReely, "Acceleration", accIgnore);
-
+       
         if (!pIsActive) {
           // set our toxilibs quaternion to new data
           quat.set(q[0], q[1], q[2], q[3]);
