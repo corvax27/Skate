@@ -43,12 +43,12 @@ import toxi.processing.*;
 ToxiclibsSupport gfx;
 
 Serial port;                         // The serial port
-char[] teapotPacket = new char[21];  // InvenSense Teapot packet
+char[] teapotPacket = new char[24];  // InvenSense Teapot packet
 int serialCount = 0;                 // current packet byte position
 int synced = 0;
 int interval = 0;
 PShape skate;
-PShape skateStable;
+
 
 
 
@@ -57,9 +57,6 @@ float[] q = new float[4]; // Storage des valeurs de quaternion
 float accReely; //Acceleration du skate en y 
 Quaternion quat = new Quaternion(1, 0, 0, 0);
 
-float[] gravity = new float[3];
-float[] euler = new float[3];
-float[] ypr = new float[3];
 
 //Saut de la planche
 float VY_INIT =5.7; //Definie la valeur de la vélocité en y
@@ -79,9 +76,8 @@ String[] LoadData;
 StringList recordData;
 boolean save= true;
 PrintWriter output;
-int BufferSize= 600;
+int BufferSize= 300; //Nombre de données enregistrées. (x seconde * 60 frame/seconde)
 boolean rIsActive= false;
-boolean wIsActive= false;
 boolean pIsActive= false;
 int counter=0;
 int timer=0;
@@ -91,8 +87,8 @@ boolean game= true;
 PImage bg;
 
 //Couleur
-color red = color(255,0,43);
-color green = color(0,255,0);
+color red = color(255, 0, 43);
+color green = color(0, 255, 0);
 
 void setup() {
   // 800px square viewport using OpenGL rendering
@@ -124,7 +120,7 @@ void setup() {
   output= createWriter("save.txt");
   recordData = new StringList();
   skate = loadShape("skate.obj");
-  skateStable = loadShape("skate.obj");
+
 
 
 
@@ -167,49 +163,49 @@ void draw() {
     }
     //Matrice des capteurs de pressions
     pushMatrix();
-   
+
     translate(45*width /64, (7*height/32));
     noStroke();
-         
-    for(int i=1;i<51;i++)
+
+    for (int i=1; i<51; i++)
     {
-      
-    if( (teapotPacket[12]/5) == i && teapotPacket[12] != 0 )fill(green); 
-    else fill(red); 
-   
-    rect(i*5, 20, 5, 12);
-    
-    if( (teapotPacket[13]/5) == i && teapotPacket[13] != 0 )fill(green); 
-    else fill(red); 
-    rect( (i*5)+15, 40, 5, 12);
-    
-    if( (teapotPacket[14]/5) == i && teapotPacket[14] != 0 )fill(green); 
-    else fill(red); 
-    rect( (i*5)+20, 60, 5, 12);
-    
-    if( (teapotPacket[15]/5) == i && teapotPacket[15] != 0 )fill(green); 
-    else fill(red); 
-    rect((i*5)+15, 80, 5, 12);
-    
-    if( (teapotPacket[16]/5) == i && teapotPacket[16] != 0 )fill(green); 
-    else fill(red); 
-    rect(i*5, 100, 5, 12);
+
+      if ( (teapotPacket[12]/5) == i && teapotPacket[12] != 0 )fill(green); 
+      else fill(red); 
+
+      rect(i*5, 20, 5, 12);
+
+      if ( (teapotPacket[13]/5) == i && teapotPacket[13] != 0 )fill(green); 
+      else fill(red); 
+      rect( (i*5)+15, 40, 5, 12);
+
+      if ( (teapotPacket[14]/5) == i && teapotPacket[14] != 0 )fill(green); 
+      else fill(red); 
+      rect( (i*5)+20, 60, 5, 12);
+
+      if ( (teapotPacket[15]/5) == i && teapotPacket[15] != 0 )fill(green); 
+      else fill(red); 
+      rect((i*5)+15, 80, 5, 12);
+
+      if ( (teapotPacket[16]/5) == i && teapotPacket[16] != 0 )fill(green); 
+      else fill(red); 
+      rect(i*5, 100, 5, 12);
     }
-    
+
     popMatrix();
 
 
-//Matrice du skate en temps réel
+    //Matrice du skate en temps réel
 
     pushMatrix();
     translate(9*width / 32, ((5*height/8))-yPos);
 
 
     rotate(axis[0], -axis[1], axis[3], axis[2]);
-    
+
     scale(25);
     shape(skate);
-    
+
     popMatrix();
 
     smooth();
@@ -235,11 +231,11 @@ void serialEvent(Serial port) {
     if (synced == 0 && ch != '$') return;   // initial synchronization - also used to resync/realign if needed
     synced = 1;
 
-    //println(ch);
+
 
     if ((serialCount == 1 && ch != 2)
-      || (serialCount == 19 && ch != '\r')
-      || (serialCount == 20 && ch != '\n')) {
+      || (serialCount == 22 && ch != '\r')
+      || (serialCount == 23 && ch != '\n')) {
       serialCount = 0;
       synced = 0;
       return;
@@ -247,8 +243,8 @@ void serialEvent(Serial port) {
 
     if (serialCount > 0 || ch == '$') {
       teapotPacket[serialCount++] = (char)ch;
-      println(ch);
-      if (serialCount == 21) {
+
+      if (serialCount == 24) {
         serialCount = 0; // restart packet byte position
 
         // get quaternion from data packet
@@ -257,7 +253,7 @@ void serialEvent(Serial port) {
         q[2] = ((teapotPacket[6] << 8) | teapotPacket[7]) / 16384.0f;
         q[3] = ((teapotPacket[8] << 8) | teapotPacket[9]) / 16384.0f;
         accReely= ((teapotPacket[10] << 8) | teapotPacket[11]) /16384.0f;
-        
+
         //Permet de savoir si la valeur envoyer est negatif ou positif
         // La valeur reçu est de 0 à 65,534
         //Pour le transformer en int16 ,il faut retrouver le negative
@@ -271,7 +267,7 @@ void serialEvent(Serial port) {
         // De plus il ignore les 300 premières lecture qui sont fausse.
         if ((accIgnore++) >300  && accReely <= JUMP_SENSIBILITY  )isJumping = true;
 
-       
+        //Si replay  joue ne pas faire
         if (!pIsActive) {
           // set our toxilibs quaternion to new data
           quat.set(q[0], q[1], q[2], q[3]);
@@ -290,9 +286,7 @@ void serialEvent(Serial port) {
 
 void keyReleased() {
 
-  if (key == 'w') {
-    wIsActive =true;
-  }
+
 
   if (key == 'r' ) {
 
@@ -307,17 +301,7 @@ void keyReleased() {
 }
 
 void SavingFile() {
-  if (wIsActive) {
 
-    println("Writing to File");
-    for (int n = 0; n < recordData.size(); n++) {
-
-      output.println(recordData.get(n));
-    }
-    wIsActive = false;
-    output.flush();
-    output.close();
-  }
 
   if (rIsActive) {
     if (timer == 0) {
@@ -332,7 +316,7 @@ void SavingFile() {
       println("1");
       delay(1000);               
       timer=millis();
-      print("Recording for 10 sec ");
+      print("Recording for 5 sec ");
     }
 
 
@@ -347,6 +331,16 @@ void SavingFile() {
     if (counter == (BufferSize -1) )
     {
       println("End of Recording");
+
+      println("Writing to File");
+      for (int n = 0; n < recordData.size(); n++) {
+
+        output.println(recordData.get(n));
+      }
+      
+      output.flush();
+      output.close();
+
       rIsActive= false;
       timer =0;
       counter=0;

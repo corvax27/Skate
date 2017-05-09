@@ -108,7 +108,7 @@ VectorInt16 aaWorld;    // [x, y, z]            world-frame accel sensor measure
 VectorFloat gravity;    // [x, y, z]            Vecteur de gravité
 
 //Structure du stockage des valeurs envoyées à processing
-uint8_t teapotPacket[21] = { '$', 0x02, 0,0, 0,0, 0,0, 0,0,0,0,0,0,0,0,0, 0x00, 0x00, '\r', '\n'};
+uint8_t teapotPacket[24] = { '$', 0x02, 0,0, 0,0, 0,0, 0,0,0,0,0,0,0,0,0,0,0,0, 0x00, 0x00, '\r', '\n'};
 
 
 
@@ -328,11 +328,14 @@ void loop() {
              teapotPacket[14]= (byte)(softpotReading[2]/4);
              teapotPacket[15]= (byte)(softpotReading[3]/4);
              teapotPacket[16]= (byte)(softpotReading[4]/4);
+             teapotPacket[17]= (byte)(softpotReading[5]/4);
+             teapotPacket[18]= (byte)(softpotReading[6]/4);
+             teapotPacket[19]= (byte)(softpotReading[7]/4);
           
-             Serial.write(teapotPacket, 21);
+             Serial.write(teapotPacket, 24);
            
            
-            teapotPacket[18]++; // packetCount, loops at 0xFF on purpose
+            teapotPacket[21]++; // packetCount, loops at 0xFF on purpose
         #endif
 
         // blink LED to indicate activity
