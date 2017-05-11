@@ -1,4 +1,4 @@
-// I2C device class (I2Cdev) demonstration Processing sketch for MPU6050 DMP output //<>// //<>// //<>//
+// I2C device class (I2Cdev) demonstration Processing sketch for MPU6050 DMP output //<>// //<>// //<>// //<>//
 // 6/20/2012 by Jeff Rowberg <jeff@rowberg.net>
 // Updates should (hopefully) always be available at https://github.com/jrowberg/i2cdevlib
 //
@@ -59,19 +59,22 @@ Quaternion quat = new Quaternion(1, 0, 0, 0);
 
 
 //Saut de la planche
-float VY_INIT =5.7; //Definie la valeur de la vélocité en y
+float VY_INIT =10; //Definie la valeur de la vélocité en y
 float vy;
-float gravite = 0.1;
+float gravite = 0.3; //constante de la gravité 
 float bounce = -1;
 float yPos; // Position en y de la planche
 boolean isJumping;
 boolean isReversing;
-int accIgnore = 0; // Ignore les 500 premieres valeurs de l'accéleration
+int accIgnore = 0; // Coopteur pour ignorer les premières valeurs  de l'accéleration à ignorer
+int NB_IGNORE = 300;
 int JUMP_SENSIBILITY = -5000 ; //Détermine la sensibility nécessaire pour faire un saut
 
 
 //Saving
-String[] qString= new String[4];
+int[] teapotBuffer= new int[9];
+String[] quatBuffer= new String[4];
+float[] saveBuffer= new float[13];
 String[] LoadData;
 StringList recordData;
 boolean save= true;
@@ -107,7 +110,7 @@ void setup() {
   //String portName = Serial.list()[0];
 
   // get a specific serial port (use EITHER this OR the first-available code above)
-  String portName = "COM4";
+  String portName = "COM3";
 
   // open the serial port
   port = new Serial(this, portName, 115200);
@@ -142,73 +145,14 @@ void draw() {
     //Interface
     background(bg);
 
-    //Creer une variable d'axe qui inclue tous les axes d'un quaternion.
-    float[] axis = quat.toAxisAngle();  
 
-    if (isJumping)
-    {
-      //Vy représente la vélocité et l'autre la gravité (constante)
-      //Lorsque le saut commence la vélocité initiale est définit par la variable VY_INIT.
-      // Ensuite la vy est ajoutée à yPos qui est une variable qui change la position de skate dans le translate.
-      // Cette vélocité est diminuée jusqu'à ce que la valeur de yPos revienne à zero.
-      //Le saut est terminé et la variable vy est remit à l'initial prêt pour une autre utilisation.
+    Jumping();
 
-      vy -= gravite;
-      yPos += vy;
-      if (yPos < 0)
-      {
-        isJumping =false;
-        vy= VY_INIT;
-      }
-    }
-    //Matrice des capteurs de pressions
-    pushMatrix();
+    //Fonction pour déssiner les capteurs
+    DrawCapteur();
 
-    translate(45*width /64, (7*height/32));
-    noStroke();
-
-    for (int i=1; i<51; i++)
-    {
-
-      if ( (teapotPacket[12]/5) == i && teapotPacket[12] != 0 )fill(green); 
-      else fill(red); 
-
-      rect(i*5, 20, 5, 12);
-
-      if ( (teapotPacket[13]/5) == i && teapotPacket[13] != 0 )fill(green); 
-      else fill(red); 
-      rect( (i*5)+15, 40, 5, 12);
-
-      if ( (teapotPacket[14]/5) == i && teapotPacket[14] != 0 )fill(green); 
-      else fill(red); 
-      rect( (i*5)+20, 60, 5, 12);
-
-      if ( (teapotPacket[15]/5) == i && teapotPacket[15] != 0 )fill(green); 
-      else fill(red); 
-      rect((i*5)+15, 80, 5, 12);
-
-      if ( (teapotPacket[16]/5) == i && teapotPacket[16] != 0 )fill(green); 
-      else fill(red); 
-      rect(i*5, 100, 5, 12);
-    }
-
-    popMatrix();
-
-
-    //Matrice du skate en temps réel
-
-    pushMatrix();
-    translate(9*width / 32, ((5*height/8))-yPos);
-
-
-    rotate(axis[0], -axis[1], axis[3], axis[2]);
-
-    scale(25);
-    shape(skate);
-
-    popMatrix();
-
-    smooth();
+    //Fonction pour déssiner les skates
+    DrawSkate();
   } else
   {
 
@@ -265,24 +209,39 @@ void serialEvent(Serial port) {
 
         //Permet de capter les sauts grace à l'accéleration reçu.
         // De plus il ignore les 300 premières lecture qui sont fausse.
-        if ((accIgnore++) >300  && accReely <= JUMP_SENSIBILITY  )isJumping = true;
+
 
         //Si replay  joue ne pas faire
         if (!pIsActive) {
           // set our toxilibs quaternion to new data
           quat.set(q[0], q[1], q[2], q[3]);
 
+          if ((accIgnore++) >NB_IGNORE  && teapotBuffer[0] <= JUMP_SENSIBILITY  )isJumping = true;
+          quatBuffer[0]=str(q[0]);     
+          quatBuffer[1]=str(q[1]);
+          quatBuffer[2]=str(q[2]);
+          quatBuffer[3]=str(q[3]);
 
-          qString[0]=str(q[0]);     
-          qString[1]=str(q[1]);
-          qString[2]=str(q[2]);
-          qString[3]=str(q[3]);
+          teapotBuffer[0]=(int)accReely;
+          teapotBuffer[1]=teapotPacket[12];
+          teapotBuffer[2]=teapotPacket[13];
+          teapotBuffer[3]=teapotPacket[14];
+          teapotBuffer[4]=teapotPacket[15];
+          teapotBuffer[5]=teapotPacket[16];
+          teapotBuffer[6]=teapotPacket[17];
+          teapotBuffer[7]=teapotPacket[18];
+          teapotBuffer[8]=teapotPacket[19];
         }
+
+
         SavingFile();
       }
     }
   }
 }
+
+
+
 
 void keyReleased() {
 
@@ -299,6 +258,9 @@ void keyReleased() {
     pIsActive=true;
   }
 }
+
+
+
 
 void SavingFile() {
 
@@ -324,8 +286,8 @@ void SavingFile() {
     if (counter < BufferSize && (millis()-timer >= (1000/60)) ) {
       timer = millis();
       print("Recording ");
-      println(qString[0]+":"+qString[1]+":"+qString[2]+":"+qString[3]);
-      recordData.append(qString[0]+":"+qString[1]+":"+qString[2]+":"+qString[3]);
+      println(quatBuffer[0]+":"+quatBuffer[1]+":"+quatBuffer[2]+":"+quatBuffer[3]+":"+teapotBuffer[0]+":"+teapotBuffer[1]+":"+teapotBuffer[2]+":"+teapotBuffer[3]+":"+teapotBuffer[4]+":"+teapotBuffer[5]+":"+teapotBuffer[6]+":"+teapotBuffer[7]+":"+teapotBuffer[8]);
+      recordData.append(quatBuffer[0]+":"+quatBuffer[1]+":"+quatBuffer[2]+":"+quatBuffer[3]+":"+teapotBuffer[0]+":"+teapotBuffer[1]+":"+teapotBuffer[2]+":"+teapotBuffer[3]+":"+teapotBuffer[4]+":"+teapotBuffer[5]+":"+teapotBuffer[6]+":"+teapotBuffer[7]+":"+teapotBuffer[8]);
       counter++;
     }
     if (counter == (BufferSize -1) )
@@ -337,7 +299,7 @@ void SavingFile() {
 
         output.println(recordData.get(n));
       }
-      
+
       output.flush();
       output.close();
 
@@ -346,6 +308,11 @@ void SavingFile() {
       counter=0;
     }
   }
+
+
+
+
+
 
   if (pIsActive) {
 
@@ -360,8 +327,20 @@ void SavingFile() {
 
     if (counter < BufferSize && (millis()-timer >= (1000/60)) ) {
       timer = millis();
-      q =float(split(LoadData[counter], ':'));
-      quat.set(q[0], q[1], q[2], q[3]);
+      saveBuffer =float(split(LoadData[counter], ':'));
+
+      quat.set(saveBuffer[0], saveBuffer[1], saveBuffer[2], saveBuffer[3]);
+      if ((accIgnore++) >NB_IGNORE  && (int)saveBuffer[4] <= JUMP_SENSIBILITY  )isJumping = true;
+
+      teapotBuffer[0]=(int)saveBuffer[4];
+      teapotBuffer[1]=(int)saveBuffer[5];
+      teapotBuffer[2]=(int)saveBuffer[6];
+      teapotBuffer[3]=(int)saveBuffer[7];
+      teapotBuffer[4]=(int)saveBuffer[8];
+      teapotBuffer[5]=(int)saveBuffer[9];
+      teapotBuffer[6]=(int)saveBuffer[10];
+      teapotBuffer[7]=(int)saveBuffer[11];
+      teapotBuffer[8]=(int)saveBuffer[12];
       counter++;
     }
 
@@ -372,4 +351,128 @@ void SavingFile() {
       counter=0;
     }
   }
+}
+
+
+
+
+
+
+
+
+void Jumping() {
+  if (isJumping)
+  {
+    //Vy représente la vélocité et l'autre la gravité (constante)
+    //Lorsque le saut commence la vélocité initiale est définit par la variable VY_INIT.
+    // Ensuite la vy est ajoutée à yPos qui est une variable qui change la position de skate dans le translate.
+    // Cette vélocité est diminuée jusqu'à ce que la valeur de yPos revienne à zero.
+    //Le saut est terminé et la variable vy est remit à l'initial prêt pour une autre utilisation.
+
+    vy -= gravite;
+    yPos += vy;
+    if (yPos < 0)
+    {
+      isJumping =false;
+      vy= VY_INIT;
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+void DrawCapteur() {
+  //Matrice des capteurs de pressions
+  pushMatrix();
+
+  translate(45*width /64, (7*height/32));
+  noStroke();
+
+
+  //Grande bandelette
+  for (int i=1; i<51; i++)
+  {
+
+    if ( (teapotBuffer[1])/5 == i && teapotBuffer[1] != 0 )fill(green); 
+    else fill(red); 
+
+    rect(i*5, 20, 5, 12);
+
+    if ( (teapotBuffer[2]/5) == i && teapotBuffer[2] != 0 )fill(green); 
+    else fill(red); 
+    rect( (i*5)+15, 40, 5, 12);
+
+    if ( (teapotBuffer[3]/5) == i && teapotBuffer[3] != 0 )fill(green); 
+    else fill(red); 
+    rect( (i*5)+20, 60, 5, 12);
+
+    if ( (teapotBuffer[4]/5) == i && teapotBuffer[4] != 0 )fill(green); 
+    else fill(red); 
+    rect((i*5)+15, 80, 5, 12);
+
+    if ( (teapotBuffer[5]/5) == i && teapotBuffer[5] != 0 )fill(green); 
+    else fill(red); 
+    rect(i*5, 100, 5, 12);
+  }
+  //Moyenne bandelette
+  for (int i=1; i<13; i++) {
+    if ( (teapotBuffer[6]/20) == i && teapotBuffer[6] != 0 )fill(green); 
+    else fill(red); 
+    pushMatrix();
+    rotate(PI/3);
+    rect((i*4)-65, 130, 4, 10);
+    popMatrix();
+    if ( (teapotBuffer[7]/20) == i && teapotBuffer[7] != 0 )fill(green); 
+    else fill(red); 
+    pushMatrix();
+    rotate(5*PI/3);
+    rect((i*4)-185, -75, 4, 10);
+    popMatrix();
+    if ((teapotBuffer[8]/20) == i && teapotBuffer[8] != 0 )fill(green); 
+    else fill(red); 
+    pushMatrix();
+    rotate(PI/2);
+    rect((i*3)+50, 145, 3, 10);
+    popMatrix();
+  }
+  popMatrix();
+}
+
+
+
+
+
+
+
+
+
+
+void DrawSkate() {
+
+  //Creer une variable d'axe qui inclue tous les axes d'un quaternion.
+  float[] axis = quat.toAxisAngle();  
+
+  //Matrice du skate en temps réel
+  pushMatrix();
+  translate(9*width / 32, ((5*height/8))-yPos);
+
+
+  rotate(axis[0], -axis[1], axis[3], axis[2]);
+
+  scale(25);
+  shape(skate);
+
+  popMatrix();
+
+  smooth();
 }
